@@ -74,19 +74,20 @@ state.next <<= pyrtl.select((state == 0) & (~page_fault) & (~reset_i) & (new_req
 
 
 # OUTPUTS 
+write_fault = (state == 2) & (req_type_i == 1) & ~writeable_wv
+read_fault = (state == 2) & (req_type_i == 0) & ~readable_wv
 page_fault <<= ((state != 0)  & ~valid_wv)
 
 # Step 4 : Determine the outputs based on the last level of the page table walk
 
-dirty_o <<= ((state == 0) | (state == 1 & dirty_wv) | (state == 2& dirty_wv))
-valid_o <<= ((state == 0) | (state == 1 & valid_wv) | (state == 2& valid_wv))
-ref_o <<= ((state == 0) | (state == 1 & ref_wv) | (state == 2& ref_wv))
-
+dirty_o <<= ((state == 0) | dirty_wv)
+valid_o <<= ((state == 0) | valid_wv)
+ref_o <<= ((state == 0) | ref_wv )
 physical_addr_o <<= pyrtl.select((state == 2) & ~page_fault, adr_wv, 0)
-finished_walk_o <<= pyrtl.select((state == 2 | ((state == 1) & page_fault) | (state == 0) & (page_fault | reset_i)), 1, 0)
+finished_walk_o <<= ((state == 2) | ((state == 1) & page_fault) | ((state == 0) & (page_fault | reset_i)))
 error_code_o <<= pyrtl.select(page_fault, 0b01, 
-                              pyrtl.select((state == 2) & (req_type_i == 0) & ~readable_wv, 0b100, 
-                                           pyrtl.select((state == 2) & (req_type_i == 1) & ~writeable_wv, 0b010, 0)))
+                              pyrtl.select(read_fault, 0b100, 
+                                           pyrtl.select(write_fault, 0b010, 0)))
 
 
 if __name__ == "__main__":
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     This just does a basic walk from the first level to the last level where no errors should occur
     """
     memory = {
-        4293918528: 0xC43FFC6B,
+        4293918528: 0x443FFC6B, # MEM[FFEFFF40] = C43... 
         4294029192: 0xAC061D26,
         1641180595: 0xDEADBEEF
     }
