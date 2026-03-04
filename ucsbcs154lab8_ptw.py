@@ -38,11 +38,6 @@ req_type_reg.next <<= pyrtl.select(state == 0, req_type_wv, req_type_reg)
 virtual_addr_wv <<= virtual_addr_i
 virtual_addr_reg.next <<= pyrtl.select(state == 0, virtual_addr_wv, virtual_addr_reg)
 
-# step address is the address at each step. 
-""" step_addr_wv <<= pyrtl.select(state == 0)
-step_addr_reg.next = pyrtl.select(state == 0, step_addr_wv, step_addr_reg) """
-
-
 # Step 1 : Split input into the three offsets
 offset_1 = virtual_addr_i[22:32]
 offset_2 = virtual_addr_i[12:22]
@@ -79,7 +74,7 @@ state.next <<= pyrtl.select((state == 0) & (~page_fault) & (~reset_i) & (new_req
 
 
 # OUTPUTS 
-page_fault <<= ((state != 0) & ((state==1 & ~valid_wv) | (state==2 & ~valid_wv)))
+page_fault <<= ((state != 0)  & ~valid_wv)
 
 # Step 4 : Determine the outputs based on the last level of the page table walk
 
@@ -88,7 +83,7 @@ valid_o <<= ((state == 0) | (state == 1 & valid_wv) | (state == 2& valid_wv))
 ref_o <<= ((state == 0) | (state == 1 & ref_wv) | (state == 2& ref_wv))
 
 physical_addr_o <<= pyrtl.select((state == 2) & ~page_fault, adr_wv, 0)
-finished_walk_o <<= pyrtl.select(page_fault, 1, 0)
+finished_walk_o <<= pyrtl.select((state == 2 | ((state == 1) & page_fault) | (state == 0) & (page_fault | reset_i)), 1, 0)
 error_code_o <<= pyrtl.select(page_fault, 0b01, 
                               pyrtl.select((state == 2) & (req_type_i == 0) & ~readable_wv, 0b100, 
                                            pyrtl.select((state == 2) & (req_type_i == 1) & ~writeable_wv, 0b010, 0)))
