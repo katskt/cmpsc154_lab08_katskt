@@ -80,7 +80,7 @@ state.next <<= pyrtl.select((state == 0) & (~page_fault) & (~reset_i) & (new_req
 
 # OUTPUTS 
 page_fault <<= ((state != 0) & ((state==1 & ~valid_wv) | (state==2 & ~valid_wv)))
-ztemp = pyrtl.WireVector(bitwidth = 1, name="ztemp" )
+
 # Step 4 : Determine the outputs based on the last level of the page table walk
 
 dirty_o <<= ((state == 0) | (state == 1 & dirty_wv) | (state == 2& dirty_wv))
